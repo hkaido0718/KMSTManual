@@ -178,7 +178,7 @@ In this section we discuss how to replicate the simulation results on the calibr
 The next step is to set parameters in \code{KMS\_Simulation.m}.  Open an instance of \code{KMS\_Simul\-ation.m} and set the following:
 \begin{itemize}
 \item \code{method = 'KMS'} to compute the Calibrated Projection Interval; or \code{method = 'AS'} to compute the AS Projection Interval.
-\item \code{DGP=k} where \code{k}$\in \{1,2,3,4,5,6,7,8\}$. This parameter selects the data-generating process.  $k=1-4$ corresponds to the rotated box described in the earlier version \citeA{kaido2016confidence}. $k=5-8$ corresponds to the Entry Games described in another earlier version \cite{kaido2017confidence}.\footnote{$k=5$ is the point-identified Entry Game with zero correlation (Table 3); $k=6$ is the partially-identified Entry Game with zero correlation (Tables 4, 6 and 7); $k=7$ is the partially-identified Entry Game with $Corr(u_1,u_2) = 0.5$ (Table 5).}    $k=8$ is the BCS simulation (Tables 2-3 in \citeA{kaido2019confidence}).
+\item \code{DGP=k} where \code{k}$\in \{1,2,3,4,5,6,7,8\}$. This parameter selects the data-generating process.  $k=1-4$ corresponds to the rotated box described in the earlier version \citeA{kaido2016confidence}. $k=5-7$ corresponds to the Entry Games described in another earlier version \cite{kaido2017confidence}.\footnote{$k=5$ is the point-identified Entry Game with zero correlation (Table 3); $k=6$ is the partially-identified Entry Game with zero correlation (Tables 4, 6 and 7); $k=7$ is the partially-identified Entry Game with $Corr(u_1,u_2) = 0.5$ (Table 5).}    $k=8$ is the Entry Game used to evaluate the performance of the calibrated projection CIs (Tables 2-3 in \citeA{kaido2019confidence}).
 \item \code{KMS=1} or \code{KMS=0} determines if \code{KMS\_0\_Main} or \code{BCS\_Main} is called. \code{KMS=0} is a valid input only if \code{DGP=8}, and  \code{component=1} or \code{component=2}.
 \item \code{component=k} where \code{k}$\in \{1,\cdots,\text{\code{dim\_p}}\}$ selects the projection direction.  That is, the projection vector is $p$ with $p_i = 1$ if $i=k$ and $p_i = 0$ otherwise.
 \item \code{n} is the sample size.  \code{n} is set to $4000$ for Tables 2-3.
@@ -209,7 +209,17 @@ Finally, run \code{KMS\_Simulation} to run a simulation with the parameters and 
 The file \code{Analysis.m} carries out post analysis for a particular set of simulations.  To run the post analysis, load a results file and run \code{Analysis.m}.  The output includes the median lower bound for the Calibrated Projection Interval; the median upper bound for the Calibrated Projection Interval; coverage percent at the end points of the identification region, as well as at the true parameter; average $\hat c(\theta)$; and average computational time.
 
 \subsection{Running Simulations: BCS-Profiling CIs}
-In this section we discuss how to replicate the simulation results on the BCS-profiling confidence intervals reported in \cite{kaido2019confidence}.
+ The BCS-profiling CIs can be calculated with or without  the EAM algorithm. To calculate them without the EAM algorithm, set \code{KMS=0} in \code{KMS\_Simulation.m} and run simulations as described in the previous section. 
+ 
+ To calculate them with the EAM algorihm, the next step is to set the following parameters in \code{BCS\_Simulation.m}.
+\begin{itemize}
+    \item \code{method = 'KMS'} (not AS) to compute the BCS-profiling CI with the EAM algorithm;
+    \item \code{DGP=8} to generate data from the Entry Game  (Tables 2-3 in \citeA{kaido2019confidence}).
+    \item \code{KMS=0} to run the BCS simulations.
+    \item \code{component=k} where \code{k}$\in \{1,2\}$ selects the projection direction.  When \code{KMS=0} is used, \code{k=1} and \code{k=2} are the only valid options for the projection direction.
+    \end{itemize}
+The remaining parameters (\code{n,Nmc,sim\_lo,sim\_hi}) are the same as the ones in the previous section. The parameters for onvergence criteria follow the baseline options and are set in \code{KMSoptions\_BCS\_Simulation.m}. Once these parameters are set, run \code{BCS\_Simulation.m} to conduct simulation experiments. The file \code{Analysis\_BCS.m} is an analog of \code{Analysis.m}, which carries out post analysis for a particular set of BCS simulations.
+
 
 \subsection{Replicating the Empirical Application}
 
