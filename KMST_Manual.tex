@@ -48,7 +48,7 @@
 \date{\normalsize{\today}}
 \maketitle
 \begin{abstract}
-\noindent We present the calibrated-projection MATLAB package implementing the method to construct confidence intervals proposed by \citeA{kaido2017confidence}.  This manual provides details on how to use the package for inference on projections of partially identified parameters.  It also explains how to use the MATLAB functions we developed to compute confidence intervals on solutions of nonlinear optimization problems with estimated constraints. \\
+\noindent We present the calibrated-projection MATLAB package implementing the method to construct confidence intervals proposed by \citeA{kaido2019confidence}.  This manual provides details on how to use the package for inference on projections of partially identified parameters.  It also explains how to use the MATLAB functions we developed to compute confidence intervals on solutions of nonlinear optimization problems with estimated constraints. \\
 \vspace{0in}\\
 \noindent\textbf{Keywords:}  Partial identification; Inference on projections; Moment inequalities; Uniform inference.\\
 \bigskip
@@ -65,28 +65,28 @@
 
 
 \section{Introduction} \label{sec:introduction}
-This manual details the structure of the Calibrated Projection Interval (CPI) algorithm and \code{MATLAB} Package.  It accompanies the paper ``Confidence Intervals for Projections of Partially Identified Parameters'' \cite{kaido2017confidence} and it assumes familiarity with that paper.\footnote{Some notation differs between this paper and \cite{kaido2017confidence}.  This is made clear throughout this manual.  Unless otherwise specified, we use notation from the earlier version of the paper \cite{kaido2016confidence}.  The table numbering references  \cite{kaido2017confidence}.}  The CPI algorithm uses an EAM (evaluate, approximate, maximize) algorithm to solve:
+This manual details the structure of the Calibrated Projection Interval (CPI) algorithm and \code{MATLAB} Package.  It accompanies the paper ``Confidence Intervals for Projections of Partially Identified Parameters'' \cite{kaido2019confidence} and it assumes familiarity with that paper.\footnote{Some notation differs between this paper and \cite{kaido2019confidence}.  This is made clear throughout this manual.  Unless otherwise specified, we use notation from the earlier version of the paper \cite{kaido2016confidence}.  The table numbering references  \cite{kaido2019confidence}.}  The CPI algorithm uses an EAM (evaluate, approximate, maximize) algorithm to solve:
 \begin{align*}
 & \inf/\sup_{\theta \in \Theta} p'\theta \\
 & \text{s.t.} \sqrt{n} \frac{\bar m_{j}(\theta)}{\hat \sigma_{j}(\theta)} \leq \hat c(\theta) \quad j=1,\cdots,J,
 \end{align*}
 where $\hat c(\theta)$ is the calibrated critical value \cite{jones1998efficient,jones2001taxonomy}.  This version of the CPI algorithm is optimized for basis projection $p = (0,\cdots,0,1,0,\cdots,0)$ with hyperrectangle parameter constraints $\Theta = \{\theta \in \mathbb{R}^d: \theta_{LB} \leq \theta \leq  \theta_{UB}\}$.  We also allow for $p$ to be in the unit sphere and polytope constraints on the parameter space, so that
-$\Theta = \{\theta \in \mathbb{R}^d: \theta_{LB} \leq \theta \leq  \theta_{UB}, A_{\theta} \theta \leq b_{\theta}\}$.  Additional care is required within these extensions (see Appendix \ref{appendix:polytope} for further details).   The current version of the package is written for moment (in)equalities that are separable in data $W$ and parameter $\theta$, so that $E_P[m_j(W_i,\theta)] = E_P[f_j(W_i)] + g_j(\theta)$.\footnote{In this manual and in the CPI MATLAB package data is defined as $W$.  The function $f$ and $g$ are the two components of the separable moment (in)equality $E_P[m_j(W_i,\theta)]$.  This is in contrast to \citeA{kaido2017confidence}, where data is $X$, $f(\theta)$ refers to the objective function, and $\bar g(\theta)$ appears in the EAM algorithm.  The subscript $n$ has also been dropped from all estimators.} Future releases of the package will include:
+$\Theta = \{\theta \in \mathbb{R}^d: \theta_{LB} \leq \theta \leq  \theta_{UB}, A_{\theta} \theta \leq b_{\theta}\}$.  Additional care is required within these extensions (see Appendix \ref{appendix:polytope} for further details).   The current version of the package is written for moment (in)equalities that are separable in data $W$ and parameter $\theta$, so that $E_P[m_j(W_i,\theta)] = E_P[f_j(W_i)] + g_j(\theta)$.\footnote{In this manual and in the CPI MATLAB package data is defined as $W$.  The function $f$ and $g$ are the two components of the separable moment (in)equality $E_P[m_j(W_i,\theta)]$.  This is in contrast to \citeA{kaido2019confidence}, where data is $X$, $f(\theta)$ refers to the objective function, and $\bar g(\theta)$ appears in the EAM algorithm.  The subscript $n$ has also been dropped from all estimators.} Future releases of the package will include:
 \begin{itemize}
 \item Non-separability of $E_P[m_j(W_i,\theta)]$ in $W_i$ and $\theta$.
 \item Objective function $h(\theta)$ not necessarily equal to $p'\theta$.
 \end{itemize}
-We have structured the code so that it is portable.  In order to implement a user-specified model, the user needs only input the data, algorithm options, the function that defines the estimators for the moment (in)equalities, as well as the gradients and standard deviation estimators of the moment functions.    Section \ref{sec:using} details how to use the portable code with a user-specified partially identified model with separable moment inequalities.  Section \ref{sec:using} also provides instructions on how to replicate the simulations in \citeA{kaido2017confidence}.     Section \ref{sec:algorithm} provides a deeper insight into how the CPI algorithm is structured. Section \ref{sec:conclusion} discusses extensions to the algorithm and concludes.
+We have structured the code so that it is portable.  In order to implement a user-specified model, the user needs only input the data, algorithm options, the function that defines the estimators for the moment (in)equalities, as well as the gradients and standard deviation estimators of the moment functions.    Section \ref{sec:using} details how to use the portable code with a user-specified partially identified model with separable moment inequalities.  Section \ref{sec:using} also provides instructions on how to replicate the simulations and the application in \citeA{kaido2019confidence}.     Section \ref{sec:algorithm} provides a deeper insight into how the CPI algorithm is structured. Section \ref{sec:conclusion} discusses extensions to the algorithm and concludes.
 
 
 \section{Using the Calibrated Projection Interval Algorithm} \label{sec:using}
-In this section we detail the steps required to run the simulations in \citeA{kaido2017confidence}, and how to run  a user-specified model.  We use as a working example the Entry Game Model in Section 5 of \citeA{kaido2017confidence}.   This section is organized as follows.  Section \ref{sec:overview} briefly describes the key files in the package.  Section \ref{subsec:cvxgen} details how to set up \code{CVXGEN} and \code{CVX}, both are fast disciplined convex solvers that we use to compute the calibrated critical value $\hat c(\theta)$ \cite{mattingley2012cvxgen,cvx,gb08}.  Section \ref{sec:simulations} provides instructions on how to replicate the simulations to reproduce the tables in \citeA{kaido2017confidence}.  Section \ref{sec:usermodel} provides instructions on how to implement a user-specified model and compute Projection Intervals (either Calibrated or Andrew and Soares (AS) \cite{andrews2010inference}) using the CPI algorithm.
+In this section we detail the steps required to run the simulations in \citeA{kaido2019confidence}, and how to run  a user-specified model.  We use as a working example the Entry Game Model in Section 5 of \citeA{kaido2019confidence}.   This section is organized as follows.  Section \ref{sec:overview} briefly describes the key files in the package.  Section \ref{subsec:cvxgen} details how to set up \code{CVXGEN} and \code{CVX}, both are fast disciplined convex solvers that we use to compute the calibrated critical value $\hat c(\theta)$ \cite{mattingley2012cvxgen,cvx,gb08}.  Section \ref{sec:simulations} provides instructions on how to replicate the simulations to reproduce the tables in \citeA{kaido2019confidence}.  Section \ref{sec:usermodel} provides instructions on how to implement a user-specified model and compute Projection Intervals (either Calibrated or Andrew and Soares (AS) \cite{andrews2010inference}) using the CPI algorithm.
 
 
 \subsection{Overview of Important Files and Folders}\label{sec:overview}
 First, we briefly describe the key \code{MATLAB} files and folders.
 \begin{itemize}
-\item \code{KMS\_Simulation.m}.  This executes the simulations in  \citeA{kaido2017confidence}.  The DGP, method (Calibrated Projection, Andrew and Soares (AS), or Bugni, Canay, and Shi (BCS)-Profiling),\footnote{The code implementing BCS is the code provided by these authors and is available at \url{http://qeconomics.org/ojs/index.php/qe/article/view/431}.} nominal significance level, projection directional vector, number of observations, and number of simulations are set by the user here.  The data is generated and passed to either \code{KMS\_0\_Main.m} or \code{BCS\_Main}, which computes the Calibrated or AS Projection Interval, or the BCS-Profiled Interval, respectively.
+\item \code{KMS\_Simulation.m}.  This executes the simulations in  \citeA{kaido2019confidence}.  The DGP, method (Calibrated Projection, Andrew and Soares (AS), or Bugni, Canay, and Shi (BCS)-Profiling),\footnote{The code implementing BCS is the code provided by these authors and is available at \url{http://qeconomics.org/ojs/index.php/qe/article/view/431}.} nominal significance level, projection directional vector, number of observations, and number of simulations are set by the user here.  The data is generated and passed to either \code{KMS\_0\_Main.m} or \code{BCS\_Main}, which computes the Calibrated or AS Projection Interval, or the BCS-Profiled Interval, respectively.
 
 \item \code{KMS\_0\_Main.m}.  This is the file that the user calls to execute the CPI algorithm and compute the Projection Interval (either Calibrated or AS).  The user specifies data \code{W}, the initial guess for a feasible parameter \code{theta\_0}, the projection direction \code{p}, a set of pre-specified feasible points \code{theta\_feas}, the lower bound on parameter space \code{LB\_theta}, the upper bound on parameter space \code{UB\_theta},  the polytope constraints on the parameter space \code{A\_theta} and \code{b\_theta} so that $A_{\theta} \theta \leq b_{\theta}$, the nominal significance level \code{alpha}, a one-sided or two-sided confidence interval \code{type}, the projection method (calibrated or AS) \code{CI\_method}, the GMS tuning parameter \code{kappa}, the GMS function \code{phi}, the name of the \code{MEX} files for \code{CVXGEN} (discussed in Section \ref{subsec:cvxgen} below) \code{CVXGEN\_name}, and a structure of algorithm options \code{KMSoptions}.
 \end{itemize}
@@ -138,8 +138,8 @@ dimensions
     S         = VV
 end
 parameters
-    A   (J1 + 2*J2 + 2*dim_p + 2 + S , dim_p)
-    b   (J1 + 2*J2 + 2*dim_p + 2 + S , 1)
+    A   (J1 + 2*J2 + 4*dim_p + 2 + S , dim_p)
+    b   (J1 + 2*J2 + 4*dim_p + 2 + S , 1)
 end
 variables
     x(dim_p,1)
@@ -172,21 +172,20 @@ An alternative solver to \code{CVXGEN} is \code{CVX}.  This solver is slower tha
 \end{enumerate}
 Once \code{CVXGEN} or \code{CVX} is set up, either a simulation model (Section \ref{sec:simulations}) or a user-specified model (Section \ref{sec:usermodel}) can be called via the CPI algorithm.\footnote{For additional help with \code{CVXGEN} or \code{CVX}, please visit   \url{https://cvxgen.com} and \url{http://cvxr.com/cvx/}.}
 
-\subsection{Running Simulations}\label{sec:simulations}
-In this section we discuss how to replicate the simulation results in \citeA{kaido2017confidence} (see Tables 1-7 in the paper).  As per \code{CVXGEN} policy, we are unable to distribute the \code{MEX} files for these simulations.  So the first step is to generate the relevant \code{MEX} files, see Section \ref{subsec:cvxgen} for instructions and Table \ref{tab:cvxgenparams} for \code{CVXGEN} parameters and naming conventions.
+\subsection{Running Simulations: Calibrated Projection CIs}\label{sec:simulations}
+In this section we discuss how to replicate the simulation results on the calibrated projection confidence intervals reported  in \citeA{kaido2019confidence} (see Tables 2-3 in the paper).  As per \code{CVXGEN} policy, we are unable to distribute the \code{MEX} files for these simulations.  So the first step is to generate the relevant \code{MEX} files, see Section \ref{subsec:cvxgen} for instructions and Table \ref{tab:cvxgenparams} for \code{CVXGEN} parameters and naming conventions.
 
 The next step is to set parameters in \code{KMS\_Simulation.m}.  Open an instance of \code{KMS\_Simul\-ation.m} and set the following:
 \begin{itemize}
 \item \code{method = 'KMS'} to compute the Calibrated Projection Interval; or \code{method = 'AS'} to compute the AS Projection Interval.
-\item \code{DGP=k} where \code{k}$\in \{1,2,3,4,5,6,7,8\}$. This parameter selects the data-generating process.  $k=1-4$ corresponds to the rotated box described in the earlier version \citeA{kaido2016confidence}. $k=5-8$ corresponds to the Entry Games: $k=5$ is the point-identified Entry Game with zero correlation (Table 3); $k=6$ is the partially-identified Entry Game with zero correlation (Tables 4, 6 and 7); $k=7$ is the partially-identified Entry Game with $Corr(u_1,u_2) = 0.5$ (Table 5);     $k=8$ is the BCS simulation (Tables 1-2 in \citeA{kaido2017confidence}).
+\item \code{DGP=k} where \code{k}$\in \{1,2,3,4,5,6,7,8\}$. This parameter selects the data-generating process.  $k=1-4$ corresponds to the rotated box described in the earlier version \citeA{kaido2016confidence}. $k=5-8$ corresponds to the Entry Games described in another earlier version \cite{kaido2017confidence}.\footnote{$k=5$ is the point-identified Entry Game with zero correlation (Table 3); $k=6$ is the partially-identified Entry Game with zero correlation (Tables 4, 6 and 7); $k=7$ is the partially-identified Entry Game with $Corr(u_1,u_2) = 0.5$ (Table 5).}    $k=8$ is the BCS simulation (Tables 2-3 in \citeA{kaido2019confidence}).
 \item \code{KMS=1} or \code{KMS=0} determines if \code{KMS\_0\_Main} or \code{BCS\_Main} is called. \code{KMS=0} is a valid input only if \code{DGP=8}, and  \code{component=1} or \code{component=2}.
 \item \code{component=k} where \code{k}$\in \{1,\cdots,\text{\code{dim\_p}}\}$ selects the projection direction.  That is, the projection vector is $p$ with $p_i = 1$ if $i=k$ and $p_i = 0$ otherwise.
-\item \code{n} is the sample size.  \code{n} is set to $4000$ for Tables 1-7.
-\item \code{Nmc} is the number of Monte Carlo simulations requested.  \code{Nmc} is set to 300 in Table 1 and 1000 in Tables 2-7.
+\item \code{n} is the sample size.  \code{n} is set to $4000$ for Tables 2-3.
+\item \code{Nmc} is the number of Monte Carlo simulations requested.  \code{Nmc} is set to 300 in Table 2 and 1000 in Table 3.
 \item \code{sim\_lo} and \code{sim\_hi} determine which simulations are run.  These parameters are used to split the simulations into batches if needed.
 \end{itemize}
-Among other things, convergence criteria  are set in \code{KMSoptions}.  All DGPs other than the correlated error DGP, which is DGP 7, use what we call the baseline options.  DGP 7, on the other hand, is a fairly difficult problem to solve.  Therefore, we use more stringent convergence criteria for this DGP.  The options listed below and, in particular, the contraction rates are discussed in more detail in Section \ref{sec:EAM}.
-
+ Among other things, convergence criteria  are set in \code{KMSoptions\_Simulation}.  All DGPs use what we call the baseline options.  %DGP 7, on the other hand, is a fairly difficult problem to solve.  Therefore, we use more stringent convergence criteria for this DGP.  The options listed below and, in particular, the contraction rates are discussed in more detail in Section \ref{sec:EAM}.
 The baseline options are:
 \begin{itemize}
 \item  \code{KMSoptions.EAM\_maxit=20}. This sets the maximum number of EAM iterations to 20.
@@ -195,19 +194,24 @@ The baseline options are:
 \item \code{KMSoptions.EAM\_obj\_tol  = 0.005}.  One requirement for convergence is that the absolute difference between the expected improvement projection and the current feasible point $\theta^{*,L}$ is less than  \code{EAM\_obj\_tol}.
 \item \code{KMSoptions.EI\_points=10}.  The M step is initialized with a set of starting points.  The algorithm selects \code{EI\_points} points around the current feasible point $\theta^{*,L}$ that have positive expected improvement.  Additional points are also selected.
 \end{itemize}
-The stringent options for \code{DGP=7} are:
-\begin{itemize}
-\item  \code{KMSoptions.EAM\_maxit=50}.
-\item \code{KMSoptions.h\_rate=1.25}.
-\item \code{KMSoptions.h\_rate2=1.15}.
-\item \code{KMSoptions.EAM\_obj\_tol  = 0.0001}.
-\item \code{KMSoptions.EI\_points=20}.
-\end{itemize}
-The number of bootstrap repetitions is also set in \code{KMSoptions.m}.  Table 1 sets this number equal to 301, so that \code{KMSoptions.B=301}.  For Tables 2-7 set \code{KMSoptions.B=1001}.
+% The stringent options for \code{DGP=7} are:
+% \begin{itemize}
+% \item  \code{KMSoptions.EAM\_maxit=50}.
+% \item \code{KMSoptions.h\_rate=1.25}.
+% \item \code{KMSoptions.h\_rate2=1.15}.
+% \item \code{KMSoptions.EAM\_obj\_tol  = 0.0001}.
+% \item \code{KMSoptions.EI\_points=20}.
+% \end{itemize}
+The number of bootstrap repetitions is also set in \code{KMSoptions\_Simulation.m}.  Table 2 sets this number equal to 301, so that \code{KMSoptions.B=301}.  For Table 3, set \code{KMSoptions.B=1001}.
 
 Finally, run \code{KMS\_Simulation} to run a simulation with the parameters and options specified above.  The results are saved in the subfolder \code{\textbackslash Results}.
 
 The file \code{Analysis.m} carries out post analysis for a particular set of simulations.  To run the post analysis, load a results file and run \code{Analysis.m}.  The output includes the median lower bound for the Calibrated Projection Interval; the median upper bound for the Calibrated Projection Interval; coverage percent at the end points of the identification region, as well as at the true parameter; average $\hat c(\theta)$; and average computational time.
+
+\subsection{Running Simulations: BCS-Profiling CIs}
+In this section we discuss how to replicate the simulation results on the BCS-profiling confidence intervals reported in \cite{kaido2019confidence}.
+
+\subsection{Replicating the Empirical Application}
 
 \subsection{User-specified Model}\label{sec:usermodel}
 In this section we detail the files that need to be modified so that a user can implement the algorithm to compute the Calibrated Projection Interval for a user-specified problem.  We use \code{DGP=6} as a working example (this is the partially-identified Entry Game with zero correlation between the unobservable shocks $u_1$ and $u_2$).  For tractability, we have created a working example file \code{ExampleDGP6.m}.  Here, we generate one data set with $n=4000$ observations.  We assume that the parameter space is a hyperrectangle and $p$ is a basis vector throughout the rest of this section.
@@ -240,7 +244,7 @@ end
 \end{lstlisting} \normalsize
 The inputs are data \code{W}, which is $n$-by-$d_W$ and \code{KMSoptions}.  The outputs are:
 \begin{enumerate}
-\item \code{f\_ineq} is a $J_1$-by-$1$ vector of moment inequalities.  As an example, consider \code{Lines 208-212} in \code{moments\_w.m}, which correspond to the Entry Game moment inequalities (See Equations 5.3-5.4 in \citeA{kaido2017confidence}):
+\item \code{f\_ineq} is a $J_1$-by-$1$ vector of moment inequalities.  As an example, consider \code{Lines 208-212} in \code{moments\_w.m}, which correspond to the Entry Game moment inequalities (See Equations 5.3-5.4 in \citeA{kaido2019confidence}):
     \footnotesize
     \begin{align*}
     E_P[m_{j}(W_i,\theta)] & = E_P[ f_{j}(W_i)] + g_{j}(\theta), \quad \text{with} \\
@@ -251,7 +255,7 @@ The inputs are data \code{W}, which is $n$-by-$d_W$ and \code{KMSoptions}.  The 
     g_{j+1}(\theta) & = [G_r((-\infty,-x_1'(\beta_1 + \Delta_1) \times [-x_2'\beta_2,\infty))  \\
     & \quad \quad -G_r((-x_1'\beta_1,-x_1'(\beta_1 + \Delta_1) \times [-x_2'\beta_2,-x_2'(\beta_2 + \delta_2)))]p_x,
     \end{align*}\normalsize
-    where $W = (Y,X)$.\footnote{We define data $W$ with firm-entry decisions $Y$ and market characteristics $X$. \citeA{kaido2017confidence} define data $X$ with firm-entry decisions $Y$ and market characteristics $Z$.} Moment inequalities $j \in \{1,3,5,7\}$ and $j+1$ correspond to a point $x$ in the support $\mathcal{X} \equiv \{(-1,-1),(-1,1),(1,-1),(-1,-1)\}$.  For each $x \in \mathcal{X}$,  $E_P[ f_{j+k}(W_i)]$, $k=0,1$,  is estimated by:
+    where $W = (Y,X)$.\footnote{We define data $W$ with firm-entry decisions $Y$ and market characteristics $X$. \citeA{kaido2019confidence} define data $X$ with firm-entry decisions $Y$ and market characteristics $Z$.} Moment inequalities $j \in \{1,3,5,7\}$ and $j+1$ correspond to a point $x$ in the support $\mathcal{X} \equiv \{(-1,-1),(-1,1),(1,-1),(-1,-1)\}$.  For each $x \in \mathcal{X}$,  $E_P[ f_{j+k}(W_i)]$, $k=0,1$,  is estimated by:
     \begin{align*}
   \hat  f_{j} & = \frac{1}{n} \sum_{i=1}^n \mathbbm{1}(Y_i = (0,1)) \mathbbm{1}(X_i = x) \\
    \hat f_{j+1} & = -\frac{1}{n} \sum_{i=1}^n \mathbbm{1}(Y_i = (0,1)) \mathbbm{1}(X_i = x).
@@ -267,7 +271,7 @@ f_ineq((ii-1)*2 + 2,1) = - sum(Y1 == 0 & Y2 == 1  & X1 == x1 & X2 == x2)/n;
 
     \item \code{f\_eq} is a $2 J_2$-by-$1$ vector of moment equalities.  Entries $j=1,\cdots,J_2$ of  \code{f\_eq} are defined on \code{Lines 215-218} in \code{moments\_w.m} and correspond to the moment equalities with $E_P[m_j(W,\theta)] \leq 0$.  Entries $j=J_2+1,\cdots,2J_2$ of  \code{f\_eq} correspond to  $-E_P[m_j(W,\theta)] \leq 0$.  It is important to include both the positive and negative of $E_P[m_j(X,\theta)]$ for the moment equalities, see \code{Line 222} in \code{moments\_w.m}: \code{ f\_eq = [f\_eq ; -f\_eq];}.
 
-    \item  \code{f\_ineq\_keep} and  \code{f\_eq\_keep} are $J_1$-by-$1$ and $2 J_2$-by-$1$ vectors of indicators.  These define which moment (in)equalities we keep.  If $f_j(W)$ has unbounded support, then set the corresponding entry in $\code{f\_ineq\_keep}$ and $\code{f\_eq\_keep}$ equal to 1 (see the rotated box example on \code{Lines 87-88} in \code{moments\_w.m}).  In the Games Example, $f_j(W_i)$ is bounded by $0$ and $1$. If  $E_P[f_j(W_i)]$ is close to $0$ or $1$, Assumption 4.1-(iv) in \citeA{kaido2017confidence}, which is taken from \citeA{andrews2010inference} and common in the literature, is violated. Therefore, if $\hat f_{j}$ is within the tolerance of \code{KMSoptions.f\_keep\_threshold} of $0$ or $1$, then the corresponding component of  \code{f\_ineq\_keep} or \code{f\_eq\_keep} is set equal to 0, indicating that moment is dropped completely from the analysis -- it is not used to compute $\hat c(\theta)$ and it does not enter the M-step (see Section \ref{sec:EAM}, Pg 24).\footnote{In the Games Example, the moment inequality functions $f_j(W_i)$  for $j \in \{2,4,6,8\}$ are bounded by $-1$ and $0$.  Thus moment inequality $j  \in \{2,4,6,8\}$ is dropped for the analysis if $\hat f_j$ is too close to $-1$ or $0$.}   Otherwise it is set to 1.  See \code{Lines 235-236} in \code{moments\_w.m}.  \code{KMSoptions.f\_keep\_threshold} is a user-specified option with default value equal to $10^{-4}$ and may be modified in different applications.
+    \item  \code{f\_ineq\_keep} and  \code{f\_eq\_keep} are $J_1$-by-$1$ and $2 J_2$-by-$1$ vectors of indicators.  These define which moment (in)equalities we keep.  If $f_j(W)$ has unbounded support, then set the corresponding entry in $\code{f\_ineq\_keep}$ and $\code{f\_eq\_keep}$ equal to 1 (see the rotated box example on \code{Lines 87-88} in \code{moments\_w.m}).  In the Games Example, $f_j(W_i)$ is bounded by $0$ and $1$. If  $E_P[f_j(W_i)]$ is close to $0$ or $1$, Assumption 4.1-(iv) in \citeA{kaido2019confidence}, which is taken from \citeA{andrews2010inference} and common in the literature, is violated. Therefore, if $\hat f_{j}$ is within the tolerance of \code{KMSoptions.f\_keep\_threshold} of $0$ or $1$, then the corresponding component of  \code{f\_ineq\_keep} or \code{f\_eq\_keep} is set equal to 0, indicating that moment is dropped completely from the analysis -- it is not used to compute $\hat c(\theta)$ and it does not enter the M-step (see Section \ref{sec:EAM}, Pg 24).\footnote{In the Games Example, the moment inequality functions $f_j(W_i)$  for $j \in \{2,4,6,8\}$ are bounded by $-1$ and $0$.  Thus moment inequality $j  \in \{2,4,6,8\}$ is dropped for the analysis if $\hat f_j$ is too close to $-1$ or $0$.}   Otherwise it is set to 1.  See \code{Lines 235-236} in \code{moments\_w.m}.  \code{KMSoptions.f\_keep\_threshold} is a user-specified option with default value equal to $10^{-4}$ and may be modified in different applications.
 
     \item \code{paired\_mom} is a $J_3$-by-$1$ vector indicating the paired moment inequalities.  If there are no paired moment inequalities, set  \code{paired\_mom} to the empty set.  For each paired moment inequalities, set the corresponding elements in \code{paired\_mom} equal to a unique indicator $j = 1,\cdots,J_3$.  See \code{Lines 227-230}  in \code{moments\_w.m}.
 
@@ -293,7 +297,7 @@ The inputs are the $d$-by-$1$ parameter vector \code{theta}, number of moment in
 In the shell above, input user-specified functions for outputs \code{g\_ineq} and \code{g\_eq}.
 
 
-As an example, consider \code{DGP=6}.  The moment functions are defined on \code{Lines 100-169} in  \code{moments\_theta.m}.  For example, the moment inequality in Equation (5.3) in \citeA{kaido2017confidence} is:
+As an example, consider \code{DGP=6}.  The moment functions are defined on \code{Lines 100-169} in  \code{moments\_theta.m}.  For example, the moment inequality in Equation (5.3) in \citeA{kaido2019confidence} is:
     \footnotesize
     \begin{align*}
     E_P[m_{j}(W_i,\theta)] & = E_P[f_{j}(W_i)]  + g_{j}(\theta) \\
@@ -364,7 +368,7 @@ and the $2 J_2$-by-$d$ matrix of gradients for the moment equalities \code{Dg\_e
 \begin{align*}
 \text{\code{Dg\_eq}}_{j,k} = \frac{\partial g_j(\theta)}{\partial \theta_k} \quad j =J_1+1,\cdots,J.
 \end{align*}
-As an example, consider the moment inequality in Equation (5.3) \citeA{kaido2017confidence}:
+As an example, consider the moment inequality in Equation (5.3) \citeA{kaido2019confidence}:
 \[
 g_j(\theta) = - \Phi(-x_1'(\beta_1 + \Delta_1))(1- \Phi(-x_2'\beta_2))p_x.
 \]
@@ -427,7 +431,7 @@ A feasible $\theta$ is one that satisfies $\sqrt{n} \frac{\bar m_j(\theta)}{\sig
 
  \item \code{method} determines whether a Calibrated Projection Interval or an AS Projection Interval is computed.  Valid input is either  \code{'KMS'}  or  \code{'AS'}.  \code{method} is set equal to \code{'KMS'}, see \code{Line 4} in \code{ExampleDGP6.m}.
 
- \item \code{kappa} specifies the tuning parameter $\kappa$.  Valid input is either  \code{NaN} for the default $\kappa = \sqrt{\ln(n)}$ or a user-specified function \code{@(n)kappa\_function(n)} satisfying  Assumption 4.2 in \citeA{kaido2017confidence}.   \code{kappa} is set equal to \code{NaN}, see \code{Line 22} in \code{ExampleDGP6.m}.
+ \item \code{kappa} specifies the tuning parameter $\kappa$.  Valid input is either  \code{NaN} for the default $\kappa = \sqrt{\ln(n)}$ or a user-specified function \code{@(n)kappa\_function(n)} satisfying  Assumption 4.2 in \citeA{kaido2019confidence}.   \code{kappa} is set equal to \code{NaN}, see \code{Line 22} in \code{ExampleDGP6.m}.
 
  \item \code{phi} specifies the GMS function $\varphi_j(x)$.  Valid input is either  \code{NaN} for the default hard thresholding function
      \[
@@ -698,7 +702,7 @@ Another feature we plan to incorporate is an objective function $h(\theta)$ in E
 7            & 9               & 8           & 8           & 0          & \code{csolve\_DGP7} \\
 8            & 5               & 8           & 4           & 13         & \code{csolve\_DGP8} \\ \hline
 \end{tabular}
-\caption{List of parameters for creating the \code{CVXGEN MEX} files for simulations in \protect\citeA{kaido2017confidence}.  The first column corresponds to the parameter \code{DGP} in \code{KMS\_Simulation}.}
+\caption{List of parameters for creating the \code{CVXGEN MEX} files for simulations in \protect\citeA{kaido2019confidence}.  The first column corresponds to the parameter \code{DGP} in \code{KMS\_Simulation}.}
 \label{tab:cvxgenparams}
 \end{table}
 
